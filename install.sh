@@ -126,6 +126,7 @@ function install_node {
 function install_common_tools {
   require_homebrew
   require_homebrew_package wget
+  require_homebrew_package openssh
   require_homebrew_package htop
   # require_homebrew_package gpg
   # gpg --list-public keys || true
@@ -165,6 +166,9 @@ function install_docker {
 function install_k8s {
   require_homebrew
   require_homebrew_package kubectl
+  require_homebrew_package kind
+  require_homebrew_package k3d
+  require_homebrew_package minikube
 }
 
 function install_vscode {
