@@ -96,14 +96,14 @@ function install_hashicorp {
   require_homebrew
   require_homebrew_tap hashicorp/tap
 
-  require_homebrew_package consul
-  require_homebrew_package packer
-  require_homebrew_package nomad
-  require_homebrew_package vault
-  require_homebrew_package tfenv
-  require_homebrew_package waypoint
-  require_homebrew_package boundary
+  require_homebrew_package consul hashicorp/tap/consul
+  require_homebrew_package packer hashicorp/tap/packer
+  require_homebrew_package nomad hashicorp/tap/nomad
+  require_homebrew_package vault hashicorp/tap/vault
+  require_homebrew_package waypoint hashicorp/tap/waypoint
+  require_homebrew_package boundary hashicorp/tap/boundary
 
+  require_homebrew_package tfenv
   require_homebrew_package safe starkandwayne/cf/safe
 }
 
