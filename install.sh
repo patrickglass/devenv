@@ -172,6 +172,7 @@ function install_k8s {
   require_homebrew_package k3d
   require_homebrew_package minikube
   require_homebrew_package k9s
+  require_homebrew_package velero
 }
 
 function install_vscode {
