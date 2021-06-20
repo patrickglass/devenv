@@ -134,6 +134,8 @@ function install_common_tools {
   require_homebrew_package vim
   require_homebrew_package pyenv
   require_homebrew_package bat
+  require_homebrew_package jq
+  require_homebrew_package gron
   # TODO: Install when we figure out shell profiles
   # echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
 
