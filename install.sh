@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+SHELL_INIT_FILE="$HOME/.zshrc"
+
 function import_hashicorp_keys_trust {
   cat << EOF > "/tmp/hashicorp.asc"
   -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -102,6 +104,7 @@ function install_hashicorp {
   require_homebrew_package vault hashicorp/tap/vault
   require_homebrew_package waypoint hashicorp/tap/waypoint
   require_homebrew_package boundary hashicorp/tap/boundary
+  require_homebrew_package sentinel hashicorp/tap/sentinel
 
   require_homebrew_package tfenv
   require_homebrew_package safe starkandwayne/cf/safe
@@ -136,13 +139,16 @@ function install_common_tools {
   require_homebrew_package bat
   require_homebrew_package jq
   require_homebrew_package gron
+  require_homebrew_package sshpass esolitos/ipa/sshpass
+  require_homebrew_package fzf
   # TODO: Install when we figure out shell profiles
-  # echo 'eval "$(pyenv init -)"' >> ~/.bash_profile
-
+  # echo 'eval "$(pyenv init -)"' >> "$SHELL_INIT_FILE"
+  require_homebrew_package awscli
+  require_homebrew_package aws-iam-authenticator
 
   if [ ! -f /usr/local/etc/bash_completion ]; then
     brew install bash-completion
-    echo '[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"' >> ~/.profile
+    echo '[[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"' >> "$SHELL_INIT_FILE"
   fi
 }
 
@@ -168,12 +174,13 @@ function install_docker {
 
 function install_k8s {
   require_homebrew
-  require_homebrew_package kubectl
+  require_homebrew_package kubectl kubernetes-cli
   require_homebrew_package kubectx
   require_homebrew_package kind
   require_homebrew_package k3d
   require_homebrew_package minikube
   require_homebrew_package k9s
+  require_homebrew_package helm
   require_homebrew_package velero
 }
 
@@ -188,14 +195,14 @@ function install_profiles {
   [ -x "$HOME/.hal_kubectl.sh" ] || cp -pr "./hal_kubectl.sh" "$HOME/.hal_kubectl.sh"
   [ -x "$HOME/.hal_profile.sh" ] || cp -pr "./hal_profile.sh" "$HOME/.hal_profile.sh"
 
-  if grep -Fq ".hal_profile.sh" ~/.zshrc ;
+  if grep -Fq ".hal_profile.sh" "$SHELL_INIT_FILE" ;
   then
-    echo "INFO: .hal_profile is already injected into $HOME/.zshrc"
+    echo "INFO: .hal_profile is already injected into $SHELL_INIT_FILE"
   else
-    echo "INFO: adding .hal_profile to $HOME/.zshrc"
-    echo "# HAL Development Environment Profile" >> "$HOME/.zshrc"
-    echo "# https://github.com/patrickglass/devenv" >> "$HOME/.zshrc"
-    echo "[ -r \"$HOME/.hal_profile.sh\" ] && . \"$HOME/.hal_profile.sh\"" >> "$HOME/.zshrc"
+    echo "INFO: adding .hal_profile to $SHELL_INIT_FILE"
+    echo "# HAL Development Environment Profile" >> "$SHELL_INIT_FILE"
+    echo "# https://github.com/patrickglass/devenv" >> "$SHELL_INIT_FILE"
+    echo "[ -r \"$HOME/.hal_profile.sh\" ] && . \"$HOME/.hal_profile.sh\"" >> "$SHELL_INIT_FILE"
   fi
 }
 
