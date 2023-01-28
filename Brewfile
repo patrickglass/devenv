@@ -38,6 +38,7 @@ tap "starkandwayne/cf"
 brew "starkandwayne/cf/safe"
 
 # Programming
+brew "buildifier"
 tap "cue-lang/tap"
 brew "golang"
 brew "golangci-lint"
