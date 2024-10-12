@@ -1,6 +1,12 @@
 #!/bin/bash -e
 
-SHELL_INIT_FILE="$HOME/.zshrc"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# Install the devenv to the correct shell profile
+SHELL_INIT_FILE="$HOME/.bashrc"
+if [ "$SHELL" = "/bin/zsh" ]; then
+  SHELL_INIT_FILE="$HOME/.zshrc"
+fi
 
 function import_hashicorp_keys_trust {
   cat << EOF > "/tmp/hashicorp.asc"
@@ -35,9 +41,9 @@ function import_hashicorp_keys_trust {
   -----END PGP PUBLIC KEY BLOCK-----
 EOF
 
-    echo "INFO: Adding trust for HashiCorp GPG Key (91A6E7F85D05C65630BEF18951852D87348FFC4C)"
-    gpg --dry-run --import --import-options import-show /tmp/hashicorp.asc
-    gpg --import /tmp/hashicorp.asc
+  echo "INFO: Adding trust for HashiCorp GPG Key (91A6E7F85D05C65630BEF18951852D87348FFC4C)"
+  gpg --dry-run --import --import-options import-show /tmp/hashicorp.asc
+  gpg --import /tmp/hashicorp.asc
 }
 
 function install_homebrew {
@@ -64,14 +70,12 @@ function require_homebrew {
 HOMEBREWTAPS=""
 function require_homebrew_tap {
   local TAP=$1
-  if [ -z "$HOMEBREWTAPS" ]
-  then
+  if [ -z "$HOMEBREWTAPS" ]; then
     HOMEBREWTAPS=$(brew tap)
   fi
 
   # check to see if tap is installed
-  if [[ "$HOMEBREWTAPS" != *"$TAP"* ]];
-  then
+  if [[ "$HOMEBREWTAPS" != *"$TAP"* ]]; then
     echo "INFO: installing missing tap: $TAP"
     brew tap "$TAP"
   fi
@@ -82,8 +86,7 @@ function require_homebrew_package {
   local BREW_PACKAGE=$2
 
   # package name defaults to command if not set
-  if [ -z "$BREW_PACKAGE" ]
-  then
+  if [ -z "$BREW_PACKAGE" ]; then
     BREW_PACKAGE="$BREW_COMMAND"
   fi
 
@@ -189,20 +192,12 @@ function install_vscode {
   require_homebrew_package code homebrew/cask/visual-studio-code
 }
 
-function install_profiles {
-  [ -x "$HOME/.hal_aliases.sh" ] || cp -pr "./hal_aliases.sh" "$HOME/.hal_aliases.sh"
-  [ -x "$HOME/.hal_functions.sh" ] || cp -pr "./hal_functions.sh" "$HOME/.hal_functions.sh"
-  [ -x "$HOME/.hal_kubectl.sh" ] || cp -pr "./hal_kubectl.sh" "$HOME/.hal_kubectl.sh"
-  [ -x "$HOME/.hal_profile.sh" ] || cp -pr "./hal_profile.sh" "$HOME/.hal_profile.sh"
-
-  if grep -Fq ".hal_profile.sh" "$SHELL_INIT_FILE" ;
-  then
-    echo "INFO: .hal_profile is already injected into $SHELL_INIT_FILE"
-  else
-    echo "INFO: adding .hal_profile to $SHELL_INIT_FILE"
-    echo "# HAL Development Environment Profile" >> "$SHELL_INIT_FILE"
-    echo "# https://github.com/patrickglass/devenv" >> "$SHELL_INIT_FILE"
-    echo "[ -r \"$HOME/.hal_profile.sh\" ] && . \"$HOME/.hal_profile.sh\"" >> "$SHELL_INIT_FILE"
+function copy_script {
+  script_name="$1"
+  echo "TEST: $script_name"
+  if [ ! -f "$HOME/.$script_name" ]; then
+    echo "INFO: installing: $script_name"
+    cp -pr "$SCRIPT_DIR/$script_name" "$HOME/.$script_name"
   fi
 }
 
@@ -211,9 +206,8 @@ function addline {
   local LINE="$2"
   local FILE="$3"
 
-  if ! grep -E -q "${PATTERN}" "${FILE}" ;
-  then
-    echo "WARN: adding line: $LINE to $FILE"
+  if [ ! grep -E -q "${PATTERN}" "${FILE}" ]; then
+    echo "INFO: adding line: $LINE to $FILE"
     echo "$LINE" >> "$FILE"
   fi
 }
@@ -223,9 +217,25 @@ function prompt {
   echo "Planning to run: $COMMAND"
   read -p "Are you sure? " -n 1 -r
   echo
-  if [[ $REPLY =~ ^[Yy]$ ]]
-  then
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
     eval "$COMMAND"
+  fi
+}
+
+function install_profiles {
+  copy_script linux_aliases.sh
+  copy_script linux_functions.sh
+  copy_script linux_kubectl.sh
+  copy_script profile.sh
+
+  addline "#.*Development Environment Profile.*" "# HAL Development Environment Profile" "$SHELL_INIT_FILE"
+  addline "#.*patrickglass/devenv.*" "# https://github.com/patrickglass/devenv" "$SHELL_INIT_FILE"
+  addline ".*.profile.sh.*" "[ -r \"$HOME/.profile.sh\" ] && . \"$HOME/.profile.sh\"" "$SHELL_INIT_FILE"
+
+  # if macos then also install macos_aliases
+  if [[ "$(uname)" == "Darwin" ]]; then
+    copy_script macos_aliases.sh
+    addline "load_script.*macos_aliases.sh.*" "load_script \"\$HOME/.macos_aliases.sh\"" "$HOME/.profile.sh"
   fi
 }
 
@@ -244,20 +254,27 @@ function show_help {
 }
 
 function main {
-  COMMAND=$1
+  COMMAND="$1"
+
+  # if COMMAND is empty and CODESPACES=true then set command to profiles
+  if [ -z "$COMMAND" ] && [ "$CODESPACES" = "true" ]; then
+    echo "INFO: detected codespaces, installing profiles."
+    COMMAND="profiles"
+  fi
 
   if [ "$COMMAND" = "--help" ]; then
     show_help
   elif [ "$COMMAND" = "clean" ]; then
     rm -rf \
-      "$HOME/.hal_aliases.sh" \
-      "$HOME/.hal_functions.sh" \
-      "$HOME/.hal_kubectl.sh" \
-      "$HOME/.hal_profile.sh"
-    sed -i '' '/\.profile\.sh/d' ~/.zshrc
-    sed -i '' '/\.hal_profile\.sh/d' ~/.zshrc
-    sed -i '' '/^# HAL Development/d' ~/.zshrc
-    sed -i '' '/patrickglass\/devenv/d' ~/.zshrc
+      "$HOME/.macos_aliases.sh" \
+      "$HOME/.linux_aliases.sh" \
+      "$HOME/.linux_functions.sh" \
+      "$HOME/.linux_kubectl.sh" \
+      "$HOME/.profile.sh"
+    sed -i '' '/\.profile\.sh/d' "$SHELL_INIT_FILE"
+    sed -i '' '/\.profile\.sh/d' "$SHELL_INIT_FILE"
+    sed -i '' '/^# HAL Development/d' "$SHELL_INIT_FILE"
+    sed -i '' '/patrickglass\/devenv/d' "$SHELL_INIT_FILE"
   elif [ "$COMMAND" = "homebrew" ]; then
     install_homebrew
   elif [ "$COMMAND" = "hashicorp" ]; then
@@ -280,16 +297,20 @@ function main {
     install_profiles
   else
     echo "INFO: starting install wizard."
-    prompt install_homebrew
-    prompt install_common_tools
     prompt install_profiles
-    prompt install_git
-    # prompt import_hashicorp_keys_trust
-    prompt install_hashicorp
-    prompt install_go
-    prompt install_docker
-    prompt install_k8s
-    prompt install_vscode
+
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo "INFO: detected macOS, installing homebrew and common tools."
+      prompt install_homebrew
+      prompt install_common_tools
+      prompt install_git
+      # prompt import_hashicorp_keys_trust
+      prompt install_hashicorp
+      prompt install_go
+      prompt install_docker
+      prompt install_k8s
+      prompt install_vscode
+    fi
   fi
   echo "INFO: install completed."
 }

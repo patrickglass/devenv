@@ -64,7 +64,7 @@ cask "homebrew/cask-fonts/font-meslo-for-powerline"
 # Kubernetes
 tap "fluxcd/tap"
 brew "crane"
-brew "kubectl"
+brew "kubernetes-cli"
 brew "kubectx"
 brew "kind"
 brew "k3d"
