@@ -47,10 +47,13 @@ alias gk='gitk --all&'
 alias gx='gitx --all'
 alias gpp='git pull; git push'
 alias gl="git log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short"
+#alias gl='git log --oneline --decorate --graph'
 
 alias gll='git log --stat --pretty=short --graph'
 alias gla='git log --oneline --decorate --graph --all'
 alias glla='git log --stat --pretty=short --graph --all'
 alias git-delete-branches='git branch --merged | egrep -v "(^\*|master|dev)" | xargs git branch -d'
 alias git-branches='for branch in `git branch -r --merged | grep -v HEAD`; do echo -e `git show --format="%ci %cr %an" $branch | head -n 1` \\t$branch; done | sort -r'
+
+alias utc='date -u "+%FT%TZ"'
 alias rsync='rsync -av --progress'

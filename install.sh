@@ -1,10 +1,11 @@
 #!/bin/bash -e
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 # Install the devenv to the correct shell profile
+SHELL_INIT_FILE="$HOME/.bashrc"
 if [ "$SHELL" = "/bin/zsh" ]; then
   SHELL_INIT_FILE="$HOME/.zshrc"
-else
-  SHELL_INIT_FILE="$HOME/.bashrc"
 fi
 
 function import_hashicorp_keys_trust {
@@ -194,33 +195,12 @@ function install_vscode {
   require_homebrew_package code homebrew/cask/visual-studio-code
 }
 
-function install_missing {
+function copy_script {
   script_name="$1"
-  if [ -x "$HOME/$script_name" ]; then
+  echo "TEST: $script_name"
+  if [ ! -x "$HOME/.$script_name" ]; then
     echo "INFO: installing: $script_name"
-    cp -pr "./$script_name" "$HOME/.$script_name"
-  fi
-}
-
-function install_profiles {
-  # if macos then install macos_aliases, otherwise install linux_aliases
-  if [[ "$(uname)" == "Darwin" ]]; then
-    install_missing macos_aliases.sh
-  else
-    install_missing macos_aliases.sh
-  fi
-  install_missing linux_functions.sh
-  install_missing linux_kubectl.sh
-  install_missing profile.sh
-
-  if grep -Fq "# HAL Development Environment Profile" "$SHELL_INIT_FILE" ;
-  then
-    echo "INFO: devenv is already injected into $SHELL_INIT_FILE. Skipping..."
-  else
-    echo "INFO: adding .linux_profile to $SHELL_INIT_FILE"
-    echo "# HAL Development Environment Profile" >> "$SHELL_INIT_FILE"
-    echo "# https://github.com/patrickglass/devenv" >> "$SHELL_INIT_FILE"
-    echo "[ -r \"$HOME/.linux_profile.sh\" ] && . \"$HOME/.linux_profile.sh\"" >> "$SHELL_INIT_FILE"
+    cp -pr "$SCRIPT_DIR/$script_name" "$HOME/.$script_name"
   fi
 }
 
@@ -231,7 +211,7 @@ function addline {
 
   if ! grep -E -q "${PATTERN}" "${FILE}" ;
   then
-    echo "WARN: adding line: $LINE to $FILE"
+    echo "INFO: adding line: $LINE to $FILE"
     echo "$LINE" >> "$FILE"
   fi
 }
@@ -244,6 +224,23 @@ function prompt {
   if [[ $REPLY =~ ^[Yy]$ ]]
   then
     eval "$COMMAND"
+  fi
+}
+
+function install_profiles {
+  copy_script linux_aliases.sh
+  copy_script linux_functions.sh
+  copy_script linux_kubectl.sh
+  copy_script profile.sh
+
+  addline "#.*Development Environment Profile.*" "# HAL Development Environment Profile" "$SHELL_INIT_FILE"
+  addline "#.*patrickglass/devenv.*" "# https://github.com/patrickglass/devenv" "$SHELL_INIT_FILE"
+  addline ".*.profile.sh.*" "[ -r \"$HOME/.profile.sh\" ] && . \"$HOME/.profile.sh\"" "$SHELL_INIT_FILE"
+
+  # if macos then also install macos_aliases
+  if [[ "$(uname)" == "Darwin" ]]; then
+    copy_script macos_aliases.sh
+    addline "load_script.*macos_aliases.sh.*" "load_script \"\$HOME/.macos_aliases.sh\"" "$HOME/.profile.sh"
   fi
 }
 
@@ -280,7 +277,7 @@ function main {
       "$HOME/.linux_kubectl.sh" \
       "$HOME/.profile.sh"
     sed -i '' '/\.profile\.sh/d' "$SHELL_INIT_FILE"
-    sed -i '' '/\.linux_profile\.sh/d' "$SHELL_INIT_FILE"
+    sed -i '' '/\.profile\.sh/d' "$SHELL_INIT_FILE"
     sed -i '' '/^# HAL Development/d' "$SHELL_INIT_FILE"
     sed -i '' '/patrickglass\/devenv/d' "$SHELL_INIT_FILE"
   elif [ "$COMMAND" = "homebrew" ]; then

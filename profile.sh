@@ -1,9 +1,11 @@
-# Main Entrypoint for all HAL Development Environment Profiles
+# Main Entrypoint for the Development Environment Profiles
 function load_script() {
   SCRIPT_NAME=$1
-  [ -x "$SCRIPT_NAME" ] && . "$SCRIPT_NAME"
+  if [ -f "$SCRIPT_NAME" ]; then
+    . "$SCRIPT_NAME"
+  fi
 }
 
-load_script "$HOME/.hal_aliases.sh"
-load_script "$HOME/.hal_functions.sh"
-load_script "$HOME/.hal_kubectl.sh"
+load_script "$HOME/.linux_aliases.sh"
+load_script "$HOME/.linux_functions.sh"
+load_script "$HOME/.linux_kubectl.sh"
