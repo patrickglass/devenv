@@ -209,9 +209,9 @@ function install_profiles {
   else
     install_missing macos_aliases.sh
   fi
-  install_missing linux_profile.sh
   install_missing linux_functions.sh
   install_missing linux_kubectl.sh
+  install_missing profile.sh
 
   if grep -Fq "# HAL Development Environment Profile" "$SHELL_INIT_FILE" ;
   then
@@ -274,14 +274,15 @@ function main {
     show_help
   elif [ "$COMMAND" = "clean" ]; then
     rm -rf \
-      "$HOME/.hal_aliases.sh" \
-      "$HOME/.hal_functions.sh" \
-      "$HOME/.hal_kubectl.sh" \
-      "$HOME/.hal_profile.sh"
-    sed -i '' '/\.profile\.sh/d' ~/.zshrc
-    sed -i '' '/\.hal_profile\.sh/d' ~/.zshrc
-    sed -i '' '/^# HAL Development/d' ~/.zshrc
-    sed -i '' '/patrickglass\/devenv/d' ~/.zshrc
+      "$HOME/.macos_aliases.sh" \
+      "$HOME/.linux_aliases.sh" \
+      "$HOME/.linux_functions.sh" \
+      "$HOME/.linux_kubectl.sh" \
+      "$HOME/.profile.sh"
+    sed -i '' '/\.profile\.sh/d' "$SHELL_INIT_FILE"
+    sed -i '' '/\.linux_profile\.sh/d' "$SHELL_INIT_FILE"
+    sed -i '' '/^# HAL Development/d' "$SHELL_INIT_FILE"
+    sed -i '' '/patrickglass\/devenv/d' "$SHELL_INIT_FILE"
   elif [ "$COMMAND" = "homebrew" ]; then
     install_homebrew
   elif [ "$COMMAND" = "hashicorp" ]; then
