@@ -1,6 +1,11 @@
 #!/bin/bash -e
 
-SHELL_INIT_FILE="$HOME/.zshrc"
+# Install the devenv to the correct shell profile
+if [ "$SHELL" = "/bin/zsh" ]; then
+  SHELL_INIT_FILE="$HOME/.zshrc"
+else
+  SHELL_INIT_FILE="$HOME/.bashrc"
+fi
 
 function import_hashicorp_keys_trust {
   cat << EOF > "/tmp/hashicorp.asc"
@@ -35,9 +40,9 @@ function import_hashicorp_keys_trust {
   -----END PGP PUBLIC KEY BLOCK-----
 EOF
 
-    echo "INFO: Adding trust for HashiCorp GPG Key (91A6E7F85D05C65630BEF18951852D87348FFC4C)"
-    gpg --dry-run --import --import-options import-show /tmp/hashicorp.asc
-    gpg --import /tmp/hashicorp.asc
+  echo "INFO: Adding trust for HashiCorp GPG Key (91A6E7F85D05C65630BEF18951852D87348FFC4C)"
+  gpg --dry-run --import --import-options import-show /tmp/hashicorp.asc
+  gpg --import /tmp/hashicorp.asc
 }
 
 function install_homebrew {
@@ -189,20 +194,33 @@ function install_vscode {
   require_homebrew_package code homebrew/cask/visual-studio-code
 }
 
-function install_profiles {
-  [ -x "$HOME/.hal_aliases.sh" ] || cp -pr "./hal_aliases.sh" "$HOME/.hal_aliases.sh"
-  [ -x "$HOME/.hal_functions.sh" ] || cp -pr "./hal_functions.sh" "$HOME/.hal_functions.sh"
-  [ -x "$HOME/.hal_kubectl.sh" ] || cp -pr "./hal_kubectl.sh" "$HOME/.hal_kubectl.sh"
-  [ -x "$HOME/.hal_profile.sh" ] || cp -pr "./hal_profile.sh" "$HOME/.hal_profile.sh"
+function install_missing {
+  script_name="$1"
+  if [ -x "$HOME/$script_name" ]; then
+    echo "INFO: installing: $script_name"
+    cp -pr "./$script_name" "$HOME/.$script_name"
+  fi
+}
 
-  if grep -Fq ".hal_profile.sh" "$SHELL_INIT_FILE" ;
-  then
-    echo "INFO: .hal_profile is already injected into $SHELL_INIT_FILE"
+function install_profiles {
+  # if macos then install macos_aliases, otherwise install linux_aliases
+  if [[ "$(uname)" == "Darwin" ]]; then
+    install_missing macos_aliases.sh
   else
-    echo "INFO: adding .hal_profile to $SHELL_INIT_FILE"
+    install_missing macos_aliases.sh
+  fi
+  install_missing linux_profile.sh
+  install_missing linux_functions.sh
+  install_missing linux_kubectl.sh
+
+  if grep -Fq "# HAL Development Environment Profile" "$SHELL_INIT_FILE" ;
+  then
+    echo "INFO: devenv is already injected into $SHELL_INIT_FILE. Skipping..."
+  else
+    echo "INFO: adding .linux_profile to $SHELL_INIT_FILE"
     echo "# HAL Development Environment Profile" >> "$SHELL_INIT_FILE"
     echo "# https://github.com/patrickglass/devenv" >> "$SHELL_INIT_FILE"
-    echo "[ -r \"$HOME/.hal_profile.sh\" ] && . \"$HOME/.hal_profile.sh\"" >> "$SHELL_INIT_FILE"
+    echo "[ -r \"$HOME/.linux_profile.sh\" ] && . \"$HOME/.linux_profile.sh\"" >> "$SHELL_INIT_FILE"
   fi
 }
 
@@ -244,7 +262,13 @@ function show_help {
 }
 
 function main {
-  COMMAND=$1
+  COMMAND="$1"
+
+  # if COMMAND is empty and CODESPACES=true then set command to profiles
+  if [ -z "$COMMAND" ] && [ "$CODESPACES" = "true" ]; then
+    echo "INFO: detected codespaces, installing profiles."
+    COMMAND="profiles"
+  fi
 
   if [ "$COMMAND" = "--help" ]; then
     show_help
@@ -280,16 +304,20 @@ function main {
     install_profiles
   else
     echo "INFO: starting install wizard."
-    prompt install_homebrew
-    prompt install_common_tools
     prompt install_profiles
-    prompt install_git
-    # prompt import_hashicorp_keys_trust
-    prompt install_hashicorp
-    prompt install_go
-    prompt install_docker
-    prompt install_k8s
-    prompt install_vscode
+
+    if [[ "$(uname)" == "Darwin" ]]; then
+      echo "INFO: detected macOS, installing homebrew and common tools."
+      prompt install_homebrew
+      prompt install_common_tools
+      prompt install_git
+      # prompt import_hashicorp_keys_trust
+      prompt install_hashicorp
+      prompt install_go
+      prompt install_docker
+      prompt install_k8s
+      prompt install_vscode
+    fi
   fi
   echo "INFO: install completed."
 }
