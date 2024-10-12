@@ -70,14 +70,12 @@ function require_homebrew {
 HOMEBREWTAPS=""
 function require_homebrew_tap {
   local TAP=$1
-  if [ -z "$HOMEBREWTAPS" ]
-  then
+  if [ -z "$HOMEBREWTAPS" ]; then
     HOMEBREWTAPS=$(brew tap)
   fi
 
   # check to see if tap is installed
-  if [[ "$HOMEBREWTAPS" != *"$TAP"* ]];
-  then
+  if [[ "$HOMEBREWTAPS" != *"$TAP"* ]]; then
     echo "INFO: installing missing tap: $TAP"
     brew tap "$TAP"
   fi
@@ -88,8 +86,7 @@ function require_homebrew_package {
   local BREW_PACKAGE=$2
 
   # package name defaults to command if not set
-  if [ -z "$BREW_PACKAGE" ]
-  then
+  if [ -z "$BREW_PACKAGE" ]; then
     BREW_PACKAGE="$BREW_COMMAND"
   fi
 
@@ -198,7 +195,7 @@ function install_vscode {
 function copy_script {
   script_name="$1"
   echo "TEST: $script_name"
-  if [ ! -x "$HOME/.$script_name" ]; then
+  if [ ! -f "$HOME/.$script_name" ]; then
     echo "INFO: installing: $script_name"
     cp -pr "$SCRIPT_DIR/$script_name" "$HOME/.$script_name"
   fi
@@ -209,8 +206,7 @@ function addline {
   local LINE="$2"
   local FILE="$3"
 
-  if ! grep -E -q "${PATTERN}" "${FILE}" ;
-  then
+  if [ ! grep -E -q "${PATTERN}" "${FILE}" ]; then
     echo "INFO: adding line: $LINE to $FILE"
     echo "$LINE" >> "$FILE"
   fi
@@ -221,8 +217,7 @@ function prompt {
   echo "Planning to run: $COMMAND"
   read -p "Are you sure? " -n 1 -r
   echo
-  if [[ $REPLY =~ ^[Yy]$ ]]
-  then
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
     eval "$COMMAND"
   fi
 }
